@@ -369,16 +369,16 @@ var App = (function () {
         let max = [0, 0];
         let points = [];
 
-        let called = 0;
+        let hack = 0;
         function push(n) {
             const p = glyphs[n]
-                      .map (translate([ max[0] + 20, 0 ]));
+                      .map (translate([ max[0] + 10, 0 ]));
             points.push(...p);
             max = p.reduce(maxvec, max);
 
-            called++;
-            if (called % 2 == 0)
-                max[0] += 40;
+            if (hack % 2 == 1)
+                max[0] += 60;
+            hack--;
         }
         
         let digits = [];
@@ -388,6 +388,7 @@ var App = (function () {
             n = ~~(n / 10);
         }
 
+        hack = digits.length;
         digits.reverse().forEach(push);
 
         const color = randomColor();
@@ -452,13 +453,29 @@ var App = (function () {
             }
         } else if (sTo != lastSTo) {
             timer -= 1000;
-            if (sTo > 61) {
-                const d = date();
-                print(d.getHours()*10000 + d.getMinutes()*100 + d.getSeconds());
-            } else {
-                print(sTo);
-            }
             lastSTo = sTo;
+            // if (sTo > 61) {
+            //     const d = countdown.date();
+            //     print(d.getHours()*10000 + d.getMinutes()*100 + d.getSeconds());
+            // } else {
+            //     print(sTo);
+            // }
+            // lastSTo = sTo;
+
+            // Double Dabble for time!
+            // kind of
+            // not really
+            let mTo = 0, hTo = 0;
+            if (sTo >= 60) {
+                mTo = ~~(sTo / 60);
+                sTo %= 60;
+            }
+            if (mTo >= 60) {
+                hTo = ~~(mTo / 60);
+                mTo %= 60;
+            }
+
+            print(hTo*10000 + mTo*100 + sTo);
         }
 
         update(delta);
