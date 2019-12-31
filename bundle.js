@@ -410,6 +410,13 @@ var App = (function () {
     let isBeforeTarget = new Date() < targetDate;
     let lastSTo = -1;
 
+    function ny() {
+        for (let i = 0; i < 20; i++)
+            console.log(`%c Happy New Year!${' '.repeat(i % 2)}`, 'font-size: 2em; font-family: cursive; font-weight: bold; color: red;');
+    }
+
+    if (!isBeforeTarget) ny();
+
     init();
     setInterval(init, 30000);
 
@@ -419,8 +426,11 @@ var App = (function () {
         let msTo = targetDate - date();
         let sTo = ~~Math.floor(msTo / 1000);
         if (!isBeforeTarget || sTo < 1) {
-            if (isBeforeTarget) barrage(width, height, randomColor());
-            isBeforeTarget = false;
+            if (isBeforeTarget) {
+                barrage(width, height, randomColor());
+                ny();
+                isBeforeTarget = false;
+            }
 
             if (timer >= delay) {
                 timer -= delay;
