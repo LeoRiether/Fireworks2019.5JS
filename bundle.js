@@ -314,10 +314,7 @@ var App = (function () {
         getOffset()
             .then(o => offset = o)
             .then(() => console.log('offset found: ', offset))
-            .catch(() => {
-                offset = 0;
-                console.log('getOffset() failed, defauting to zero');
-            });
+            .catch(() => console.log('getOffset() failed'));
     }
 
     function date() {
