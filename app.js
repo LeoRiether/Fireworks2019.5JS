@@ -51,11 +51,16 @@ function print(n) {
     let max = [0, 0];
     let points = [];
 
+    let called = 0;
     function push(n) {
         const p = font.glyphs[n]
                   .map (translate([ max[0] + 20, 0 ]));
         points.push(...p);
         max = p.reduce(maxvec, max);
+
+        called++;
+        if (called % 2 == 0)
+            max[0] += 40;
     }
     
     let digits = [];
