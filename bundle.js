@@ -296,23 +296,18 @@ var App = (function () {
     let offset = 0;
 
     let getOffset = () => new Promise((res, rej) => {
-        if (location.protocol == 'file:')
-            return rej();
-
-        // var xhr = new ActiveXObject("Msxml2.XMLHTTP");
         let xhr = new XMLHttpRequest();
-        xhr.open("GET", location.href);
-        xhr.send();
+        xhr.open("GET", "https://worldtimeapi.org/api/timezone/Etc/UTC");
+        xhr.responseType = 'json';
 
         xhr.onload = () => {
-            var dateStr = xhr.getResponseHeader('Date');
-            var serverTimeMillisGMT = Date.parse(new Date(Date.parse(dateStr)).toUTCString());
-            var localMillisUTC = Date.parse(new Date().toUTCString());
-
-            res(serverTimeMillisGMT -  localMillisUTC);
+            let server = new Date(xhr.response.utc_datetime);
+            res(server - new Date());
         };
 
         xhr.onerror = rej;
+
+        xhr.send();
     });
 
     function init() {
@@ -412,17 +407,19 @@ var App = (function () {
     // TODO: review this
     let targetDate = new Date(2020, 0, 1); // why the fuck are months 0-indexed?
     targetDate = new Date(2020, 0, 1, 0, 0, 0);
+    targetDate = new Date(2019, 11, 31, 15, 2);
     let isBeforeTarget = new Date() < targetDate;
     let lastSTo = -1;
 
     init();
+    setInterval(init, 30000);
 
     function update$1(delta) {
         // TODO: transform this into a state machine
         // Update: yeah, I really need an FSM for this
         let msTo = targetDate - date();
-        let sTo = ~~Math.ceil(msTo / 1000);
-        if (!isBeforeTarget || msTo <= 0) {
+        let sTo = ~~Math.floor(msTo / 1000);
+        if (!isBeforeTarget || sTo < 1) {
             if (isBeforeTarget) barrage(width, height, randomColor());
             isBeforeTarget = false;
 

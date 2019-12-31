@@ -2,23 +2,18 @@
 let offset = 0;
 
 let getOffset = () => new Promise((res, rej) => {
-    if (location.protocol == 'file:')
-        return rej();
-
-    // var xhr = new ActiveXObject("Msxml2.XMLHTTP");
     let xhr = new XMLHttpRequest();
-    xhr.open("GET", location.href);
-    xhr.send();
+    xhr.open("GET", "https://worldtimeapi.org/api/timezone/Etc/UTC");
+    xhr.responseType = 'json';
 
     xhr.onload = () => {
-        var dateStr = xhr.getResponseHeader('Date');
-        var serverTimeMillisGMT = Date.parse(new Date(Date.parse(dateStr)).toUTCString());
-        var localMillisUTC = Date.parse(new Date().toUTCString());
-
-        res(serverTimeMillisGMT -  localMillisUTC);
+        let server = new Date(xhr.response.utc_datetime);
+        res(server - new Date());
     };
 
     xhr.onerror = rej;
+
+    xhr.send();
 });
 
 export function init() {

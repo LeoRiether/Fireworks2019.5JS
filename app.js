@@ -86,17 +86,19 @@ let delay = 0;
 // TODO: review this
 let targetDate = new Date(2020, 0, 1); // why the fuck are months 0-indexed?
 targetDate = new Date(2020, 0, 1, 0, 0, 0);
+targetDate = new Date(2019, 11, 31, 15, 2);
 let isBeforeTarget = new Date() < targetDate;
 let lastSTo = -1;
 
 countdown.init();
+setInterval(countdown.init, 30000);
 
 function update(delta) {
     // TODO: transform this into a state machine
     // Update: yeah, I really need an FSM for this
     let msTo = targetDate - countdown.date();
-    let sTo = ~~Math.ceil(msTo / 1000);
-    if (!isBeforeTarget || msTo <= 0) {
+    let sTo = ~~Math.floor(msTo / 1000);
+    if (!isBeforeTarget || sTo < 1) {
         if (isBeforeTarget) special.barrage(width, height, randomColor());
         isBeforeTarget = false;
 
