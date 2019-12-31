@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "rollup": "^1.27.14"
+  },
+  "name": "fireworks2020",
+  "version": "1.0.0",
+  "description": "Happy New Year!",
+  "main": "app.js",
+  "author": "Leonardo Riether",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "build": "rollup app.js --file bundle.js --format iife --output.name App(",
+    "start": "rollup app.js --file bundle.js --format iife --output.name App -w"
+  }
+}

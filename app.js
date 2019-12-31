@@ -1,0 +1,183 @@
+/**
+ * Happy New Year!
+ */
+
+// Goal for next year: make many types of fireworks, resembling more real life, and have an FSM
+
+import * as psys from "./particle_system";
+import * as font from "./font";
+import * as special from "./special";
+import * as countdown from "./countdown";
+
+let time = performance.now();
+let timer = 0;
+
+// Setup
+const world = document.getElementById('world');
+const ctx = world.getContext('2d', { alpha: true });
+let width = document.documentElement.clientWidth || window.innerWidth;
+let height = document.documentElement.clientHeight || window.innerHeight;
+world.width = width;
+world.height = height;
+
+ctx.fillStyle = 'black';
+ctx.fillRect(0, 0, width, height);
+
+window.addEventListener('resize', function () {
+    world.width = width = document.documentElement.clientWidth || window.innerWidth;
+    world.height = height = document.documentElement.clientHeight || window.innerHeight;
+
+    // Fun fact! This could possibly execute intertwined with some other drawing function, thus drawing a black particle, for example
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+});
+
+font.normalize();
+
+const randomColor = () => ({
+    h: Math.random() * 360,
+    s: 75,
+    l: 70 + font.noise(5)
+});
+
+function print(n) {
+    if (n < 0) return "print() doesn't accept n < 0";
+
+    const translate = o => p => [ p[0] + o[0], p[1] + o[1] ];
+
+    const max_ = (a, b) => a > b ? a : b;
+    const maxvec = (a, b) => [ max_(a[0], b[0]), max_(a[1], b[1]) ];
+
+    let max = [0, 0];
+    let points = [];
+
+    function push(n) {
+        const p = font.glyphs[n]
+                  .map (translate([ max[0] + 20, 0 ]));
+        points.push(...p);
+        max = p.reduce(maxvec, max);
+    }
+    
+    let digits = [];
+    if (n == 0) digits.push(0);
+    while (n > 0) {
+        digits.push(n % 10);
+        n = ~~(n / 10);
+    }
+
+    digits.reverse().forEach(push);
+
+    const color = randomColor();
+    psys.lerpers.push(
+        ...points
+        .map (translate([ width/2 - max[0]/2, height/2 - max[1]/2 ])) // translate to center
+        .map (point => new psys.Lerper(
+            // [ width / 2 + font.noise(width / 2), height ],
+            [ width / 2, height ],
+            // [ width / 2, height / 2 ],
+            point,
+            Object.create(color)
+        ))
+    );
+}
+
+let delay = 0;
+
+// TODO: review this
+let targetDate = new Date(2020, 0, 1); // why the fuck are months 0-indexed?
+targetDate = new Date(2020, 0, 1, 0, 0, 0);
+let isBeforeTarget = new Date() < targetDate;
+let lastSTo = -1;
+
+countdown.init();
+
+function update(delta) {
+    // TODO: transform this into a state machine
+    // Update: yeah, I really need an FSM for this
+    let msTo = targetDate - countdown.date();
+    let sTo = ~~Math.ceil(msTo / 1000);
+    if (!isBeforeTarget || msTo <= 0) {
+        if (isBeforeTarget) special.barrage(width, height, randomColor());
+        isBeforeTarget = false;
+
+        if (timer >= delay) {
+            timer -= delay;
+            delay = ~~(Math.random() * 100) + 20;
+            psys.fusers.push(new psys.Fuser(
+                [ width / 2 + font.noise(width / 2), height + 2 ],
+                [ font.noise(100), -400 * Math.random() - 300 ],
+                Math.random()*1000 + 1000,
+                randomColor()
+            ));
+
+            let roll = ~~(Math.random()*1000);
+            if (roll > 990) {
+                special.random(width, height, randomColor());
+                delay = 1500;
+            }
+        }
+    } else if (sTo != lastSTo) {
+        timer -= 1000;
+        if (sTo > 61) {
+            const d = countdown.date();
+            print(d.getHours()*10000 + d.getMinutes()*100 + d.getSeconds());
+        } else {
+            print(sTo);
+        }
+        lastSTo = sTo;
+    }
+
+    psys.update(delta);
+}
+
+function draw() {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(0, 0, width, height);
+
+    psys.draw(ctx);
+}
+
+let displayFPS = false;
+let deltaSum = 0;
+let frameCount = 0;
+let fps = 0;
+
+function drawFPS(delta) {
+    deltaSum += delta;
+    frameCount++;
+
+    if (deltaSum >= 1000) {
+        fps = 1000.0 * frameCount / deltaSum;
+        frameCount = 0;
+        deltaSum = 0;
+    }
+
+    ctx.fillStyle = 'white';
+    ctx.font = '16px Arial';
+    ctx.fillText(`FPS: ${~~(fps * 100.0) / 100.0}`, 10, 20);
+}
+
+(function loop() {
+    const lastTime = time;
+    time = performance.now();
+    const delta = time - lastTime;
+    timer += delta;
+
+    update(delta);
+    draw();
+
+    if (displayFPS) {
+        drawFPS(delta);
+    }
+
+    requestAnimationFrame(loop);
+})();
+
+export default {
+    print,
+    psys, special,
+    rec: font.recording,
+    width, height,
+    randomColor,
+    toggleFPS() { displayFPS = !displayFPS; }
+};
