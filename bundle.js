@@ -246,22 +246,26 @@ var App = (function () {
         }
     }
 
-    // unfinished
     function sides(width, height, color) {
-        let theta = -Math.PI / 6;
-        for (let i = 0; i < 3; i++, theta -= Math.PI / 4) {
+        const spawn = theta => () => {
             fusers.push(new Fuser(
                 [ 0, height ],
                 [ 500 * Math.cos(theta), 500 * Math.sin(theta) ],
                 1500,
-                Object.create(color)
+                Object.create(color),
             ));
             fusers.push(new Fuser(
                 [ width, height ],
-                [ 500 * Math.cos(theta - Math.PI), 500 * Math.sin(theta - Math.PI) ],
+                [ -500 * Math.cos(theta), 500 * Math.sin(theta) ],
                 1500,
-                Object.create(color)
+                Object.create(color),
             ));
+        };
+
+        let n = 20;
+        for (let i = 0; i < n; i++) {
+            let deg = 10 + i * 80 / n;
+            setTimeout(spawn(-deg * Math.PI / 180), i * 500 / n);
         }
     }
 
@@ -278,7 +282,7 @@ var App = (function () {
         }
     }
 
-    const list = [ barrage, radius ];
+    const list = [ barrage, radius, sides ];
 
     function random(width, height, color) {
         list[~~(Math.random() * list.length)](width, height, color);
@@ -409,7 +413,7 @@ var App = (function () {
 
     // TODO: review this
     let targetDate = new Date(2021, 0, 1); // why the fuck are months 0-indexed?
-    targetDate = new Date(2021, 0, 1, 0, 0, 0);
+    targetDate = new Date(2020, 0, 1, 0, 0, 0);
     let isBeforeTarget = new Date() < targetDate;
     let lastSTo = -1;
 

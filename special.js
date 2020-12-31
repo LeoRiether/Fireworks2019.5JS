@@ -11,22 +11,26 @@ export function barrage(width, height, color) {
     }
 }
 
-// unfinished
 export function sides(width, height, color) {
-    let theta = -Math.PI / 6;
-    for (let i = 0; i < 3; i++, theta -= Math.PI / 4) {
+    const spawn = theta => () => {
         psys.fusers.push(new psys.Fuser(
             [ 0, height ],
             [ 500 * Math.cos(theta), 500 * Math.sin(theta) ],
             1500,
-            Object.create(color)
+            Object.create(color),
         ));
         psys.fusers.push(new psys.Fuser(
             [ width, height ],
-            [ 500 * Math.cos(theta - Math.PI), 500 * Math.sin(theta - Math.PI) ],
+            [ -500 * Math.cos(theta), 500 * Math.sin(theta) ],
             1500,
-            Object.create(color)
+            Object.create(color),
         ));
+    };
+
+    let n = 20;
+    for (let i = 0; i < n; i++) {
+        let deg = 10 + i * 80 / n;
+        setTimeout(spawn(-deg * Math.PI / 180), i * 500 / n);
     }
 }
 
@@ -43,7 +47,7 @@ export function radius(width, height, color) {
     }
 }
 
-const list = [ barrage, radius ];
+const list = [ barrage, radius, sides ];
 
 export function random(width, height, color) {
     list[~~(Math.random() * list.length)](width, height, color);

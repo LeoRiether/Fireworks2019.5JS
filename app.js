@@ -91,7 +91,7 @@ let delay = 0;
 
 // TODO: review this
 let targetDate = new Date(2021, 0, 1); // why the fuck are months 0-indexed?
-targetDate = new Date(2021, 0, 1, 0, 0, 0);
+targetDate = new Date(2020, 0, 1, 0, 0, 0);
 let isBeforeTarget = new Date() < targetDate;
 let lastSTo = -1;
 
