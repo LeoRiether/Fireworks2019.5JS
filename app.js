@@ -62,7 +62,7 @@ function print(n) {
             max[0] += 60;
         hack--;
     }
-    
+
     let digits = [];
     if (n == 0) digits.push(0);
     while (n > 0) {
@@ -90,8 +90,8 @@ function print(n) {
 let delay = 0;
 
 // TODO: review this
-let targetDate = new Date(2020, 0, 1); // why the fuck are months 0-indexed?
-targetDate = new Date(2020, 0, 1, 0, 0, 0);
+let targetDate = new Date(2021, 0, 1); // why the fuck are months 0-indexed?
+targetDate = new Date(2021, 0, 1, 0, 0, 0);
 let isBeforeTarget = new Date() < targetDate;
 let lastSTo = -1;
 
