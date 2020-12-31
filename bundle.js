@@ -481,6 +481,8 @@ var App = (function () {
     setInterval(init, 30000);
 
     function maybeTriggerSpecial() {
+        let msTo = targetDate - date();
+        let sTo = ~~Math.floor(msTo / 1000);
         if (isBeforeTarget && sTo >= 1) return;
 
         let roll = ~~(Math.random()*100);

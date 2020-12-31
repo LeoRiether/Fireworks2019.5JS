@@ -106,6 +106,8 @@ countdown.init();
 setInterval(countdown.init, 30000);
 
 function maybeTriggerSpecial() {
+    let msTo = targetDate - countdown.date();
+    let sTo = ~~Math.floor(msTo / 1000);
     if (isBeforeTarget && sTo >= 1) return;
 
     let roll = ~~(Math.random()*100);
