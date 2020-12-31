@@ -9,37 +9,29 @@ var App = (function () {
     const g = 300;
     const Tau = 2.0*Math.PI;
 
-    function Lerper(from, to, color) {
-        this.pos = from;
-        this.from = from;
-        this.to = to;
-        this.color = color;
-        this.t = 0;
-    }
+    const Lerper = (from, to, color) => ({
+        pos: from,
+        from: from,
+        to: to,
+        color: color,
+        t: 0
+    });
 
-    function Fuser(pos, vel, fuse, color) {
-        this.pos = pos;
-        this.vel = vel;
-        this.fuse = fuse;
-        this.color = color;
-    }
-
-    function Roamer(pos, vel, color) {
-        this.pos = pos;
-        this.vel = vel;
-        this.color = color;
-    }
+    const Fuser = (pos, vel, color, fuse = 1500) => ({ pos, vel, fuse, color });
+    const Roamer = (pos, vel, color) => ({ pos, vel, color });
+    const DoubleFuserChild = (fuse = 500) => (pos, vel, color) => Fuser(pos, vel, color, fuse);
 
     let lerpers = []; // Particles that lerp towards a point
     let fusers  = []; // Particles that roam free until they explode
     let roamers = []; // Particles that just move until they dissapear
+    let doubleFusers = []; // Fusers that explode into fusers
 
-    function explode(pos, color, n) {
+    function explode(pos, color, n, list, ctor) {
         for (let i = 0; i < n; i++) {
             let abs = Math.random() * 500;
             let theta = Math.random() * Tau;
             let vel = [ abs * Math.cos(theta), abs * Math.sin(theta) - 20 ];
-            roamers.push(new Roamer(
+            list.push(ctor(
                 pos.slice(),
                 vel,
                 Object.create(color)
@@ -105,7 +97,7 @@ var App = (function () {
 
             // Could remove these kinds of ifs by using maps and filters, but nah
             if (p.t >= 1000) {
-                explode(p.pos, p.color, 1);
+                explode(p.pos, p.color, 1, roamers, Roamer);
                 removeAt(lerpers, i);
             } else {
                 p.pos = qerp(p.from, p.to, p.t / 1000.0);
@@ -118,8 +110,22 @@ var App = (function () {
 
             p.fuse -= dt;
             if (p.fuse <= 0) {
-                explode(p.pos, p.color, 60);
+                explode(p.pos, p.color, 60, roamers, Roamer);
                 removeAt(fusers, i);
+            } else {
+                roam(p.pos, p.vel, dts);
+            }
+        }
+
+        // Double fusers
+        for (let i = doubleFusers.length-1; i >= 0; i--) {
+            let p = doubleFusers[i];
+
+            p.fuse -= dt;
+            p.color.h += 2;
+            if (p.fuse <= 0) {
+                explode(p.pos, p.color, 30, fusers, DoubleFuserChild(Math.random() * 400 + 400));
+                removeAt(doubleFusers, i);
             } else {
                 roam(p.pos, p.vel, dts);
             }
@@ -139,6 +145,13 @@ var App = (function () {
                 ctx.fillRect(p.pos[0], p.pos[1], 1, 1);
             }
         }
+
+        for (const p of doubleFusers) {
+            ctx.fillStyle = `hsl(${p.color.h}deg, ${p.color.s}%, ${p.color.l}%)`;
+            ctx.beginPath();
+            ctx.arc(p.pos[0], p.pos[1], 2, 0, Tau);
+            ctx.fill();
+        }
     }
 
     var psys = /*#__PURE__*/Object.freeze({
@@ -146,9 +159,11 @@ var App = (function () {
         Lerper: Lerper,
         Fuser: Fuser,
         Roamer: Roamer,
+        DoubleFuserChild: DoubleFuserChild,
         lerpers: lerpers,
         fusers: fusers,
         roamers: roamers,
+        doubleFusers: doubleFusers,
         update: update,
         draw: draw
     });
@@ -237,28 +252,29 @@ var App = (function () {
 
     function barrage(width, height, color) {
         for (let x = 0; x <= width; x += 30) {
-            fusers.push(new Fuser(
+            fusers.push(Fuser(
                 [ x, height + 2 ],
                 [ 0, -500 * Math.random() - 300 ],
+                Object.create(color),
                 Math.random()*1000 + 1000,
-                Object.create(color)
             ));
         }
     }
 
     function sides(width, height, color) {
+        const abs = 100 * (2 * Math.abs() - 1) + 500;
         const spawn = theta => () => {
-            fusers.push(new Fuser(
+            fusers.push(Fuser(
                 [ 0, height ],
-                [ 500 * Math.cos(theta), 500 * Math.sin(theta) ],
-                1500,
+                [ abs * Math.cos(theta), abs * Math.sin(theta) ],
                 Object.create(color),
+                1500,
             ));
-            fusers.push(new Fuser(
+            fusers.push(Fuser(
                 [ width, height ],
-                [ -500 * Math.cos(theta), 500 * Math.sin(theta) ],
-                1500,
+                [ -abs * Math.cos(theta), abs * Math.sin(theta) ],
                 Object.create(color),
+                1500,
             ));
         };
 
@@ -271,18 +287,52 @@ var App = (function () {
 
     function radius(width, height, color) {
         for (let theta = 0; theta > -Math.PI; theta -= Math.PI / 10) {
-            for (let abs = 400; abs <= 600; abs += 100) {
-                fusers.push(new Fuser(
+            const spawn = abs => () => {
+                fusers.push(Fuser(
                     [ width / 2, height ],
                     [ abs * Math.cos(theta), abs * Math.sin(theta) ],
+                    Object.create(color),
                     1500,
-                    Object.create(color)
                 ));
+            };
+
+            let abs = 50 * (2 * Math.random() - 1) + 400;
+            for (let i = 0; i < 3; i++) {
+                setTimeout(spawn(abs + 100 * i), i * 200);
             }
         }
     }
 
-    const list = [ barrage, radius, sides ];
+    function doubleFusers$1(width, height, color) {
+        let n = ~~(Math.random() * 3) + 2;
+        for (let i = 0; i < n; i++) {
+            let x = width*0.1 + i * width*0.8 / (n-1);
+            doubleFusers.push(Fuser(
+                [ x, height ],
+                [ 0, -500 * Math.random() - 250 ],
+                Object.create(color),
+                Math.random()*1000 + 1000,
+            ));
+        }
+    }
+
+    function radius_n_sides(width, height, color) {
+        radius(width, height, color);
+        sides(width, height, color);
+    }
+
+    // this can also trigger `combo` itself!
+    function combo(width, height, color) {
+        random(width, height, Object.create(color));
+
+        // There's some chance it doesn't actually combo
+        if (Math.random() > 0.6) {
+            color.h = Math.random() * 360;
+            setTimeout(() => random(width, height, color), 500);
+        }
+    }
+
+    const list = [ barrage, radius, sides, doubleFusers$1, radius_n_sides, combo ];
 
     function random(width, height, color) {
         list[~~(Math.random() * list.length)](width, height, color);
@@ -293,6 +343,9 @@ var App = (function () {
         barrage: barrage,
         sides: sides,
         radius: radius,
+        doubleFusers: doubleFusers$1,
+        radius_n_sides: radius_n_sides,
+        combo: combo,
         random: random
     });
 
@@ -399,7 +452,7 @@ var App = (function () {
         lerpers.push(
             ...points
             .map (translate([ width/2 - max[0]/2, height/2 - max[1]/2 ])) // translate to center
-            .map (point => new Lerper(
+            .map (point => Lerper(
                 // [ width / 2 + font.noise(width / 2), height ],
                 [ width / 2, height ],
                 // [ width / 2, height / 2 ],
@@ -427,6 +480,17 @@ var App = (function () {
     init();
     setInterval(init, 30000);
 
+    function maybeTriggerSpecial() {
+        if (isBeforeTarget && sTo >= 1) return;
+
+        let roll = ~~(Math.random()*100);
+        if (roll > 70) {
+            random(width, height, randomColor());
+            delay = 1500;
+        }
+    }
+    setInterval(maybeTriggerSpecial, 500);
+
     function update$1(delta) {
         // TODO: transform this into a state machine
         // Update: yeah, I really need an FSM for this
@@ -442,18 +506,12 @@ var App = (function () {
             if (timer >= delay) {
                 timer -= delay;
                 delay = ~~(Math.random() * 100) + 20;
-                fusers.push(new Fuser(
+                fusers.push(Fuser(
                     [ width / 2 + noise(width / 2), height + 2 ],
                     [ noise(100), -400 * Math.random() - 300 ],
+                    randomColor(),
                     Math.random()*1000 + 1000,
-                    randomColor()
                 ));
-
-                let roll = ~~(Math.random()*1000);
-                if (roll > 990) {
-                    random(width, height, randomColor());
-                    delay = 1500;
-                }
             }
         } else if (sTo != lastSTo) {
             timer -= 1000;

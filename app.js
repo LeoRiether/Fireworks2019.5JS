@@ -77,7 +77,7 @@ function print(n) {
     psys.lerpers.push(
         ...points
         .map (translate([ width/2 - max[0]/2, height/2 - max[1]/2 ])) // translate to center
-        .map (point => new psys.Lerper(
+        .map (point => psys.Lerper(
             // [ width / 2 + font.noise(width / 2), height ],
             [ width / 2, height ],
             // [ width / 2, height / 2 ],
@@ -105,6 +105,17 @@ if (!isBeforeTarget) ny();
 countdown.init();
 setInterval(countdown.init, 30000);
 
+function maybeTriggerSpecial() {
+    if (isBeforeTarget && sTo >= 1) return;
+
+    let roll = ~~(Math.random()*100);
+    if (roll > 70) {
+        special.random(width, height, randomColor());
+        delay = 1500;
+    }
+}
+setInterval(maybeTriggerSpecial, 500);
+
 function update(delta) {
     // TODO: transform this into a state machine
     // Update: yeah, I really need an FSM for this
@@ -120,18 +131,12 @@ function update(delta) {
         if (timer >= delay) {
             timer -= delay;
             delay = ~~(Math.random() * 100) + 20;
-            psys.fusers.push(new psys.Fuser(
+            psys.fusers.push(psys.Fuser(
                 [ width / 2 + font.noise(width / 2), height + 2 ],
                 [ font.noise(100), -400 * Math.random() - 300 ],
+                randomColor(),
                 Math.random()*1000 + 1000,
-                randomColor()
             ));
-
-            let roll = ~~(Math.random()*1000);
-            if (roll > 990) {
-                special.random(width, height, randomColor());
-                delay = 1500;
-            }
         }
     } else if (sTo != lastSTo) {
         timer -= 1000;

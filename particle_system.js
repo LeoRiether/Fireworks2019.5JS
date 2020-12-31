@@ -6,37 +6,29 @@
 const g = 300;
 const Tau = 2.0*Math.PI;
 
-export function Lerper(from, to, color) {
-    this.pos = from;
-    this.from = from;
-    this.to = to;
-    this.color = color;
-    this.t = 0;
-}
+export const Lerper = (from, to, color) => ({
+    pos: from,
+    from: from,
+    to: to,
+    color: color,
+    t: 0
+});
 
-export function Fuser(pos, vel, fuse, color) {
-    this.pos = pos;
-    this.vel = vel;
-    this.fuse = fuse;
-    this.color = color;
-}
-
-export function Roamer(pos, vel, color) {
-    this.pos = pos;
-    this.vel = vel;
-    this.color = color;
-}
+export const Fuser = (pos, vel, color, fuse = 1500) => ({ pos, vel, fuse, color });
+export const Roamer = (pos, vel, color) => ({ pos, vel, color });
+export const DoubleFuserChild = (fuse = 500) => (pos, vel, color) => Fuser(pos, vel, color, fuse);
 
 export let lerpers = []; // Particles that lerp towards a point
 export let fusers  = []; // Particles that roam free until they explode
 export let roamers = []; // Particles that just move until they dissapear
+export let doubleFusers = []; // Fusers that explode into fusers
 
-function explode(pos, color, n) {
+function explode(pos, color, n, list, ctor) {
     for (let i = 0; i < n; i++) {
         let abs = Math.random() * 500;
         let theta = Math.random() * Tau;
         let vel = [ abs * Math.cos(theta), abs * Math.sin(theta) - 20 ];
-        roamers.push(new Roamer(
+        list.push(ctor(
             pos.slice(),
             vel,
             Object.create(color)
@@ -102,7 +94,7 @@ export function update(dt) {
 
         // Could remove these kinds of ifs by using maps and filters, but nah
         if (p.t >= 1000) {
-            explode(p.pos, p.color, 1);
+            explode(p.pos, p.color, 1, roamers, Roamer);
             removeAt(lerpers, i);
         } else {
             p.pos = qerp(p.from, p.to, p.t / 1000.0);
@@ -115,8 +107,22 @@ export function update(dt) {
 
         p.fuse -= dt;
         if (p.fuse <= 0) {
-            explode(p.pos, p.color, 60);
+            explode(p.pos, p.color, 60, roamers, Roamer);
             removeAt(fusers, i);
+        } else {
+            roam(p.pos, p.vel, dts);
+        }
+    }
+
+    // Double fusers
+    for (let i = doubleFusers.length-1; i >= 0; i--) {
+        let p = doubleFusers[i];
+
+        p.fuse -= dt;
+        p.color.h += 2;
+        if (p.fuse <= 0) {
+            explode(p.pos, p.color, 30, fusers, DoubleFuserChild(Math.random() * 400 + 400));
+            removeAt(doubleFusers, i);
         } else {
             roam(p.pos, p.vel, dts);
         }
@@ -135,5 +141,12 @@ export function draw(ctx) {
             // ctx.fill();
             ctx.fillRect(p.pos[0], p.pos[1], 1, 1);
         }
+    }
+
+    for (const p of doubleFusers) {
+        ctx.fillStyle = `hsl(${p.color.h}deg, ${p.color.s}%, ${p.color.l}%)`;
+        ctx.beginPath();
+        ctx.arc(p.pos[0], p.pos[1], 2, 0, Tau);
+        ctx.fill();
     }
 }
